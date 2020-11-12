@@ -238,3 +238,54 @@ def test_integration_multirun(skip_integration, multi_run_file):
     # for run in ['1', '2']:
     #     assert isfile(join(conversion_path, f'Test2_samefreq_TWOscans_{run}_trigger_time.png'))
     assert isfile(join(conversion_path, 'Test2_samefreq_TWOscans.png'))
+
+
+def test_integration_matlab(skip_integration, matlab_file):
+
+    if skip_integration:
+        pytest.skip('Skipping integration test')
+
+    test_path, test_filename = split(matlab_file)
+    test_chtrig = 1
+    conversion_path = join(test_path, 'code', 'conversion')
+
+    phys2bids(filename=test_filename, indir=test_path, outdir=test_path,
+              chtrig=test_chtrig, num_timepoints_expected=1100, tr=0.555)
+
+    # Check that files are generated in outdir.
+    base_filename = 'CBD'
+    for suffix in ['.json', '.tsv.gz']:
+        assert isfile(join(test_path,
+                           f'{base_filename}{suffix}'))
+
+    # Check that files are generated in conversion path.
+    assert isfile(join(conversion_path, f'{base_filename}.log'))
+
+    # Check that plot is generated in conversion path.
+    assert isfile(join(conversion_path, f'{base_filename}.png'))
+
+    # Read log file (note that this file is not the logger file)
+    log_filename = f'{base_filename}.log'
+    with open(join(conversion_path, log_filename)) as log_info:
+        log_info = log_info.readlines()
+
+    # Check timepoints expected
+    assert check_string(log_info, 'Timepoints expected', '1100')
+    # Check timepoints found
+    assert check_string(log_info, 'Timepoints found', '1100')
+    # Check sampling frequency
+    assert check_string(log_info, 'Sampling Frequency', '1000.0')
+    # Check sampling started
+    assert check_string(log_info, 'Sampling started', '101.2090')
+    # Check first trigger
+    assert check_string(log_info, 'first trigger', 'Time 0', is_num=False)
+
+    # Checks json file
+    json_filename = f'{base_filename}.json'
+    with open(join(test_path, json_filename)) as json_file:
+        json_data = json.load(json_file)
+
+    # Compares values in json file with ground truth
+    assert math.isclose(json_data['SamplingFrequency'], 1000.0,)
+    assert math.isclose(json_data['StartTime'], 101.209,)
+    assert json_data['Columns'] == ['time', 'Trigger', 'CO2', 'O2', 'Pulse']

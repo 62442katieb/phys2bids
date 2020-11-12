@@ -222,6 +222,8 @@ def phys2bids(filename, info=False, indir='.', outdir='.', heur_file=None,
         from phys2bids.interfaces.acq import populate_phys_input
     elif ftype == 'txt':
         from phys2bids.interfaces.txt import populate_phys_input
+    elif ftype == 'mat':
+        from phys2bids.interfaces.mat import populate_phys_input
 
     LGR.info(f'Reading the file {infile}')
     phys_in = populate_phys_input(infile, chtrig)
